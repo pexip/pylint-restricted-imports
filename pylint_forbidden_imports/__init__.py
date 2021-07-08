@@ -55,9 +55,7 @@ class ForbiddenImportChecker(BaseChecker):
         super().__init__(linter)
         self._forbidden_imports = {}
         self._recursive = False
-        self._imports: Dict[
-            str, Dict[Union[Import, ImportFrom], Set[str]]
-        ] = defaultdict(lambda: defaultdict(set))
+        self._imports: Dict[str, Set[str]] = defaultdict(set)
 
     def open(self):
         for group in self.config.forbidden_imports:
@@ -90,21 +88,26 @@ class ForbiddenImportChecker(BaseChecker):
 
     @staticmethod
     def _import_module(node: Union[Import, ImportFrom], name: str) -> Optional[Module]:
+        module = None
         if isinstance(node, Import):
             try:
-                return node.do_import_module(name)
+                module = node.do_import_module(name)
             except AstroidBuildingException:
                 return None
 
-        try:
-            return node.do_import_module(f"{node.modname}.{name}")
-        except AstroidBuildingException:
-            pass
+        if not module:
+            try:
+                module = node.do_import_module(f"{node.modname}.{name}")
+            except AstroidBuildingException:
+                pass
 
-        try:
-            return node.do_import_module(node.modname)
-        except AstroidBuildingException:
-            pass
+        if not module:
+            try:
+                module = node.do_import_module(node.modname)
+            except AstroidBuildingException:
+                pass
+        if isinstance(module, Module):
+            return module
 
         return None
 
@@ -116,10 +119,10 @@ class ForbiddenImportChecker(BaseChecker):
                 imported_module = self._import_module(node, name)
                 if not imported_module:
                     continue
-                self._imports[module.name][node].add(imported_module.name)
+                self._imports[module.name].add(imported_module.name)
                 if imported_module.name in self._imports:
                     continue
-                if self._recursive:
+                if self._recursive and imported_module:
                     self._gather_imports(imported_module)
 
     def _check_forbidden_imports(self, node: Union[Import, ImportFrom]):
@@ -131,36 +134,41 @@ class ForbiddenImportChecker(BaseChecker):
         if not forbidden_imports:
             return
 
-        if parent_module.name not in self._imports:
-            self._gather_imports(parent_module)
+        modules = [self._import_module(node, n) for n, _ in node.names]
+        modules = [m for m in modules if m is not None]
 
-        for import_name in self._imports[parent_module.name][node]:
-            has_forbidden_imports = False
+        has_forbidden_imports = False
+        for module in modules:
             for forbidden_import in forbidden_imports:
-                if import_name.startswith(forbidden_import):
+                if module.name.startswith(forbidden_import):
+                    has_forbidden_imports = True
                     self.add_message(
                         "forbidden-import",
                         node=node,
-                        args=(import_name, forbidden_import),
+                        args=(module.name, forbidden_import),
                     )
-                    has_forbidden_imports = True
 
-            # If we have any forbidden imports, no point checking the transitive ones
-            if has_forbidden_imports:
-                return
+        if not self._recursive:
+            return
 
-            if not self._recursive:
-                return
+        # If we have any forbidden imports, no point checking the transitive ones
+        if has_forbidden_imports:
+            return
 
+        if parent_module.name not in self._imports:
+            self._gather_imports(parent_module)
+
+        for module in modules:
             transitive_import = self._get_forbidden_transitive_imports(
-                import_name, forbidden_imports
+                module.name, forbidden_imports
             )
             if transitive_import:
                 self.add_message(
                     "forbidden-transitive-import",
                     node=node,
-                    args=(import_name, transitive_import),
+                    args=(module.name, transitive_import),
                 )
+                return
 
     def _get_forbidden_transitive_imports(
         self, import_name: str, forbidden_imports: List[str]
@@ -175,12 +183,11 @@ class ForbiddenImportChecker(BaseChecker):
             checked_modules.add(module_name)
 
             # Gather all the imported modules and queue them for checking
-            for imports in self._imports[module_name].values():
-                for import_name in imports:
-                    for forbidden_import in forbidden_imports:
-                        if import_name.startswith(forbidden_import):
-                            return import_name
-                modules_to_check.update(imports)
+            for import_name in self._imports[module_name]:
+                for forbidden_import in forbidden_imports:
+                    if import_name.startswith(forbidden_import):
+                        return import_name
+            modules_to_check.update(self._imports[module_name])
 
         return None
 

@@ -16,7 +16,7 @@ class TestForbiddenImportChecker(CheckerTestCase):
     CHECKER_CLASS = ForbiddenImportChecker
     CONFIG = {
         "forbidden_imports": ["foo:bar"],
-        "forbidden_import_recurse": "n",
+        "forbidden_import_recurse": False,
     }
 
     def test_no_forbidden_import(self):
@@ -58,12 +58,15 @@ class TestForbiddenImportChecker(CheckerTestCase):
 
     def test_recursive_import(self):
         """test recursive import"""
-        self.CONFIG["forbidden_import_recurse"] = "y"
+        self.CONFIG["forbidden_import_recurse"] = True
+        self.setup_method()
 
         node = astroid.extract_node("import baz", "foo")
+        baz_module = astroid.extract_node("import bar", "baz").parent
         with mock.patch.object(self.checker, "_import_module") as mock_import_module:
             mock_import_module.side_effect = [
-                astroid.extract_node("import bar", "baz").parent,
+                baz_module,
+                baz_module,
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
@@ -73,12 +76,15 @@ class TestForbiddenImportChecker(CheckerTestCase):
 
     def test_recursive_importfrom(self):
         """test recursive importfrom"""
-        self.CONFIG["forbidden_import_recurse"] = "y"
+        self.CONFIG["forbidden_import_recurse"] = True
+        self.setup_method()
 
         node = astroid.extract_node("from baz import wibble", "foo")
+        baz_wibble_module = astroid.extract_node("from bar import Wibble", "baz.wibble").parent
         with mock.patch.object(self.checker, "_import_module") as mock_import_module:
             mock_import_module.side_effect = [
-                astroid.extract_node("from bar import Wibble", "baz.wibble").parent,
+                baz_wibble_module,
+                baz_wibble_module,
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
