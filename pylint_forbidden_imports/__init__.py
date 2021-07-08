@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Set
+from typing import Optional, List, Union, Set, Dict
 
 from astroid import Import, Module, ImportFrom, AstroidBuildingException
 from astroid.context import InferenceContext
@@ -55,18 +55,13 @@ class ForbiddenImportChecker(BaseChecker):
         super().__init__(linter)
         self._forbidden_imports = {}
         self._recursive = False
+        self._imports: Dict[str, Set[str]] = {}
 
     def open(self):
         for group in self.config.forbidden_imports:
             root_module, forbidden_import_str = group.split(":")
             self._forbidden_imports[root_module] = forbidden_import_str.split(";")
         self._recursive = self.config.forbidden_import_recurse
-
-    @staticmethod
-    def _infer_name_module(node, name):
-        context = InferenceContext()
-        context.lookupname = name
-        return node.infer(context, asname=False)
 
     @staticmethod
     def _get_parent_module(node: NodeNG) -> Optional[Module]:
@@ -177,7 +172,13 @@ class ForbiddenImportChecker(BaseChecker):
                     continue
                 for name, _ in node.names:
                     imported_module = self._import_module(node, name)
-                    if imported_module:
+                    if not imported_module:
+                        continue
+                    if imported_module.name not in checked_modules:
+                        for forbidden_import in forbidden_imports:
+                            if module.name.startswith(forbidden_import):
+                                bad_imports.add(module.name)
+                                continue
                         modules_to_check.add(imported_module)
 
         return bad_imports
