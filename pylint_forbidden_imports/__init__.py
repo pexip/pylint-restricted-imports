@@ -94,21 +94,20 @@ class ForbiddenImportChecker(BaseChecker):
                 module = node.do_import_module(name)
             except AstroidBuildingException:
                 return None
-
-        if not module:
+        elif node.modname:
             try:
                 module = node.do_import_module(f"{node.modname}.{name}")
             except AstroidBuildingException:
                 pass
 
-        if not module:
-            try:
-                module = node.do_import_module(node.modname)
-            except AstroidBuildingException:
-                pass
+            if not module:
+                try:
+                    module = node.do_import_module(node.modname)
+                except AstroidBuildingException:
+                    pass
+
         if isinstance(module, Module):
             return module
-
         return None
 
     def _gather_imports(self, module: Module):
