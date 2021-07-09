@@ -58,7 +58,7 @@ setuptools.setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     url=METADATA["repository"],
-    packages=setuptools.find_packages(where="src", exclude=("*test*", "*tests*")),
+    packages=setuptools.find_packages(where=".", exclude=("*test*", "*tests*")),
     package_dir=PACKAGE_DIRS,
     project_urls=PROJECT["tool"]["poetry"].get("urls", {}),
     python_requires=METADATA["dependencies"]["python"],
