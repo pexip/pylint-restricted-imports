@@ -5,60 +5,60 @@ import astroid
 
 from pylint.testutils import CheckerTestCase, Message
 
-from pylint_forbidden_imports import ForbiddenImportChecker
+from pylint_restricted_imports import RestrictedImportChecker
 
 INPUT_DIR = Path(__file__).absolute().parent / "input"
 
 
-class TestForbiddenImportChecker(CheckerTestCase):
-    """Forbidden Import Checker Tests"""
+class TestRestrictedImportChecker(CheckerTestCase):
+    """restricted Import Checker Tests"""
 
-    CHECKER_CLASS = ForbiddenImportChecker
+    CHECKER_CLASS = RestrictedImportChecker
     CONFIG = {
-        "forbidden_imports": ["foo:bar"],
-        "forbidden_import_recurse": False,
+        "restricted_imports": ["foo:bar"],
+        "restricted_import_recurse": False,
     }
 
-    def test_no_forbidden_import(self):
-        """test no forbidden imports from import"""
+    def test_no_restricted_import(self):
+        """test no restricted imports from import"""
         node = astroid.extract_node("import baz", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("baz", "baz")
             with self.assertNoMessages():
                 self.checker.visit_import(node)
 
-    def test_no_forbidden_importfrom(self):
-        """test no forbidden imports from import from"""
+    def test_no_restricted_importfrom(self):
+        """test no restricted imports from import from"""
         node = astroid.extract_node("from baz import wibble", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("baz.wibble", "baz.wibble")
             with self.assertNoMessages():
                 self.checker.visit_importfrom(node)
 
-    def test_forbidden_import(self):
-        """test forbidden import"""
+    def test_restricted_import(self):
+        """test restricted import"""
         node = astroid.extract_node("import bar", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("bar", "bar")
             with self.assertAddsMessages(
-                Message("forbidden-import", node=node, args=("bar", "bar"))
+                Message("restricted-import", node=node, args=("bar", "bar"))
             ):
                 self.checker.visit_import(node)
 
-    def test_forbidden_importfrom(self):
-        """test forbidden import from"""
+    def test_restricted_importfrom(self):
+        """test restricted import from"""
         node = astroid.extract_node("from bar import wibble", "foo")
 
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("bar.wibble", "bar.wibble")
             with self.assertAddsMessages(
-                  Message("forbidden-import", node=node, args=("bar.wibble", "bar"))
+                  Message("restricted-import", node=node, args=("bar.wibble", "bar"))
             ):
                 self.checker.visit_importfrom(node)
 
     def test_recursive_import(self):
         """test recursive import"""
-        self.CONFIG["forbidden_import_recurse"] = True
+        self.CONFIG["restricted_import_recurse"] = True
         self.setup_method()
 
         node = astroid.extract_node("import baz", "foo")
@@ -70,13 +70,13 @@ class TestForbiddenImportChecker(CheckerTestCase):
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
-                Message("forbidden-transitive-import", node=node, args=("baz", "bar"))
+                Message("restricted-transitive-import", node=node, args=("baz", "bar"))
             ):
                 self.checker.visit_import(node)
 
     def test_recursive_importfrom(self):
         """test recursive importfrom"""
-        self.CONFIG["forbidden_import_recurse"] = True
+        self.CONFIG["restricted_import_recurse"] = True
         self.setup_method()
 
         node = astroid.extract_node("from baz import wibble", "foo")
@@ -88,6 +88,6 @@ class TestForbiddenImportChecker(CheckerTestCase):
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
-                Message("forbidden-transitive-import", node=node, args=("baz.wibble", "bar"))
+                Message("restricted-transitive-import", node=node, args=("baz.wibble", "bar"))
             ):
                 self.checker.visit_importfrom(node)

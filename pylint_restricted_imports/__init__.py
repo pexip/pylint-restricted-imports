@@ -7,32 +7,32 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 
-class ForbiddenImportChecker(BaseChecker):
-    """Pylint checker that enforces forbidden import"""
+class RestrictedImportChecker(BaseChecker):
+    """Pylint checker that enforces restricted import"""
 
     __implements__ = IAstroidChecker
 
-    name = "forbidden-import"
+    name = "restricted-import"
     priority = -1
     msgs = {
         "E6901": (
-            "Not allowed to import %s here, %s is a forbidden module",
-            "forbidden-import",
+            "Not allowed to import %s here, %s is a restricted module",
+            "restricted-import",
             "Refactor your code to remove this import.",
         ),
         "E6902": (
-            "Importing %s causes %s, a forbidden module, to be imported",
-            "forbidden-transitive-import",
+            "Importing %s causes %s, a restricted module, to be imported",
+            "restricted-transitive-import",
             "Refactor your code to remove this import.",
         ),
     }
     options = (
         (
-            "forbidden-imports",
+            "restricted-imports",
             {
                 "default": (),
                 "type": "csv",
-                "metavar": "<module:forbidden;imports>",
+                "metavar": "<module:restricted;imports>",
                 "help": (
                     "Colon/semicolon-delimited sets of names that determine"
                     " what modules are allowed to be imported"
@@ -41,27 +41,27 @@ class ForbiddenImportChecker(BaseChecker):
             },
         ),
         (
-            "forbidden-import-recurse",
+            "restricted-import-recurse",
             {
                 "default": False,
                 "type": "yn",
                 "metavar": "<y_or_n>",
-                "help": "Check forbidden imports recursively",
+                "help": "Check restricted imports recursively",
             },
         ),
     )
 
     def __init__(self, linter=None):
         super().__init__(linter)
-        self._forbidden_imports = {}
+        self._restricted_imports = {}
         self._recursive = False
         self._imports: Dict[str, Set[str]] = defaultdict(set)
 
     def open(self):
-        for group in self.config.forbidden_imports:
-            root_module, forbidden_import_str = group.split(":")
-            self._forbidden_imports[root_module] = forbidden_import_str.split(";")
-        self._recursive = self.config.forbidden_import_recurse
+        for group in self.config.restricted_imports:
+            root_module, restricted_import_str = group.split(":")
+            self._restricted_imports[root_module] = restricted_import_str.split(";")
+        self._recursive = self.config.restricted_import_recurse
 
     @staticmethod
     def _get_parent_module(node: NodeNG) -> Optional[Module]:
@@ -74,17 +74,17 @@ class ForbiddenImportChecker(BaseChecker):
         assert isinstance(node, Module)
         return node
 
-    def _get_forbidden_imports_for_module(self, module: Optional[Module]) -> List[str]:
-        """Get list of forbidden imports for a given node"""
+    def _get_restricted_imports_for_module(self, module: Optional[Module]) -> List[str]:
+        """Get list of restricted imports for a given node"""
         if module is None:
             return []
 
-        # Get list of forbidden imports for this module
-        forbidden_imports = set()
-        for module_prefix in self._forbidden_imports:
+        # Get list of restricted imports for this module
+        restricted_imports = set()
+        for module_prefix in self._restricted_imports:
             if module.name.startswith(module_prefix):
-                forbidden_imports.update(self._forbidden_imports[module_prefix])
-        return list(forbidden_imports)
+                restricted_imports.update(self._restricted_imports[module_prefix])
+        return list(restricted_imports)
 
     @staticmethod
     def _import_module(node: Union[Import, ImportFrom], name: str) -> Optional[Module]:
@@ -124,53 +124,53 @@ class ForbiddenImportChecker(BaseChecker):
                 if self._recursive and imported_module:
                     self._gather_imports(imported_module)
 
-    def _check_forbidden_imports(self, node: Union[Import, ImportFrom]):
+    def _check_restricted_imports(self, node: Union[Import, ImportFrom]):
         parent_module = self._get_parent_module(node)
         if not parent_module:
             return
 
-        forbidden_imports = self._get_forbidden_imports_for_module(parent_module)
-        if not forbidden_imports:
+        restricted_imports = self._get_restricted_imports_for_module(parent_module)
+        if not restricted_imports:
             return
 
         modules = [self._import_module(node, n) for n, _ in node.names]
         modules = [m for m in modules if m is not None]
 
-        has_forbidden_imports = False
+        has_restricted_imports = False
         for module in modules:
-            for forbidden_import in forbidden_imports:
-                if module.name.startswith(forbidden_import):
-                    has_forbidden_imports = True
+            for restricted_import in restricted_imports:
+                if module.name.startswith(restricted_import):
+                    has_restricted_imports = True
                     self.add_message(
-                        "forbidden-import",
+                        "restricted-import",
                         node=node,
-                        args=(module.name, forbidden_import),
+                        args=(module.name, restricted_import),
                     )
 
         if not self._recursive:
             return
 
-        # If we have any forbidden imports, no point checking the transitive ones
-        if has_forbidden_imports:
+        # If we have any restricted imports, no point checking the transitive ones
+        if has_restricted_imports:
             return
 
         if parent_module.name not in self._imports:
             self._gather_imports(parent_module)
 
         for module in modules:
-            transitive_import = self._get_forbidden_transitive_imports(
-                module.name, forbidden_imports
+            transitive_import = self._get_restricted_transitive_imports(
+                module.name, restricted_imports
             )
             if transitive_import:
                 self.add_message(
-                    "forbidden-transitive-import",
+                    "restricted-transitive-import",
                     node=node,
                     args=(module.name, transitive_import),
                 )
                 return
 
-    def _get_forbidden_transitive_imports(
-        self, import_name: str, forbidden_imports: List[str]
+    def _get_restricted_transitive_imports(
+        self, import_name: str, restricted_imports: List[str]
     ) -> Optional[str]:
         checked_modules: Set[str] = set()
         modules_to_check: Set[str] = {import_name}
@@ -183,26 +183,26 @@ class ForbiddenImportChecker(BaseChecker):
 
             # Gather all the imported modules and queue them for checking
             for import_name in self._imports[module_name]:
-                for forbidden_import in forbidden_imports:
-                    if import_name.startswith(forbidden_import):
+                for restricted_import in restricted_imports:
+                    if import_name.startswith(restricted_import):
                         return import_name
             modules_to_check.update(self._imports[module_name])
 
         return None
 
     def visit_import(self, node):
-        """check import isn't forbidden"""
+        """check import isn't restricted"""
         if not isinstance(node, Import):
             return
-        self._check_forbidden_imports(node)
+        self._check_restricted_imports(node)
 
     def visit_importfrom(self, node):
-        """check import isn't forbidden"""
+        """check import isn't restricted"""
         if not isinstance(node, ImportFrom):
             return
-        self._check_forbidden_imports(node)
+        self._check_restricted_imports(node)
 
 
 def register(linter):
     """Required to register the plugin with pylint"""
-    linter.register_checker(ForbiddenImportChecker(linter))
+    linter.register_checker(RestrictedImportChecker(linter))

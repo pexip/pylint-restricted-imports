@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "pylint-forbidden-imports"
+name = "pylint-restricted-imports"
 version = "0.1.0"
 license = "MIT"
-description = "pylint-forbidden-imports is a Pylint plugin to restrict what imports are allowed in different modules"
+description = "pylint-restricted-imports is a Pylint plugin to restrict what imports are allowed in different modules"
 authors = [
     "Pexip AS <packaging@pexip.com>",
     "Huw Jones <huw@pexip.com>",
 ]
-repository = "https://github.com/pexip/pylint-forbidden-imports"
+repository = "https://github.com/pexip/pylint-restricted-imports"
 readme = "README.md"
 keywords = ["pylint", "plugin", "imports"]
 classifiers = [
@@ -21,7 +21,7 @@ classifiers = [
     'Programming Language :: Python :: 3.9',
 ]
 packages = [
-    { include = "pylint_forbidden_imports"}
+    { include = "pylint_restricted_imports"}
 ]
 exclude = [
     "**/tests/**/*",
