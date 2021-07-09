@@ -1,28 +1,68 @@
-from distutils.core import setup
+#!/usr/bin/env python3
+import re
 
-_version = '0.1.0'
-_packages = ['pylint_forbidden_imports']
+import setuptools
+from pathlib import Path
+import toml
 
-_short_description = (
-    "pylint-forbidden-imports is a Pylint plugin to restrict what imports are allowed in different modules"
-)
+ROOT_DIR = Path(__file__).parent
 
-_install_requires = [
-    'pylint>=1.0',
-    'astroid>=1.0',
-]
+# Load pyproject.toml
+with ROOT_DIR.joinpath("pyproject.toml").open("r") as pyproject:
+    PROJECT = toml.load(pyproject)
 
-setup(
-    name='pylint-forbidden-imports',
-    url='https://github.com/pexip/pylint-forbidden-imports',
-    author='Pexip AS',
-    author_email='packaging@pexip.com',
-    description=_short_description,
-    version=_version,
-    packages=_packages,
-    install_requires=_install_requires,
-    license='MIT',
-    download_url=f"https://github.com/pexip/pylint-forbidden-imports/tarball/{_version}",
-    keywords='pylint forbidden import plugin',
-    python_requires='>=3.7',
+with ROOT_DIR.joinpath("README.md").open("r") as readme:
+    README = readme.read()
+
+METADATA = PROJECT["tool"]["poetry"]
+AUTHOR, AUTHOR_EMAIL = METADATA["authors"][0].rsplit(" ", 1)
+PACKAGE_DIRS = {p["include"]: p.get("from", ".") + "/" + p["include"] for p in METADATA["packages"]}
+CLASSIFIERS = PROJECT["tool"]["poetry"]["classifiers"]
+
+
+def _get_dependencies(requirements):
+    dependencies = []
+    for library, data in requirements.items():
+        if library == "python":
+            continue
+
+        python_version = None
+        if isinstance(data, str):
+            version = data
+        elif isinstance(data, dict):
+            version = data["version"]
+            python_version = data.get("python", None)
+        else:
+            raise NotImplementedError(library, data)
+
+        if version.startswith("^"):
+            version = f">={version[1:]}"
+        elif re.match(r"\d", version[0]):
+            version = f"=={version}"
+        dependency = f"{library}{version}"
+        if python_version:
+            operator, py_version, _ = re.split(r"(\d\.\d)", python_version)
+            dependency += f"python_version{operator}'{py_version}'"
+        dependencies.append(dependency)
+    return dependencies
+
+
+DEPENDENCIES = _get_dependencies(METADATA["dependencies"])
+DEV_DEPENDENCIES = _get_dependencies(METADATA["dev-dependencies"])
+
+setuptools.setup(
+    name=METADATA["name"],
+    version=METADATA["version"],
+    description=METADATA["description"],
+    long_description=README,
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
+    url=METADATA["repository"],
+    packages=setuptools.find_packages(where="src", exclude=("*test*", "*tests*")),
+    package_dir=PACKAGE_DIRS,
+    project_urls=PROJECT["tool"]["poetry"].get("urls", {}),
+    python_requires=METADATA["dependencies"]["python"],
+    install_requires=DEPENDENCIES,
+    extras_require={"dev": DEV_DEPENDENCIES},
+    classifiers=CLASSIFIERS,
 )
