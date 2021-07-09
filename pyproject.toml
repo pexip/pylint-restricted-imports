@@ -8,7 +8,7 @@ authors = [
     "Huw Jones <huw@pexip.com>",
 ]
 repository = "https://github.com/pexip/pylint-restricted-imports"
-readme = "README.md"
+readme = "README.rst"
 keywords = ["pylint", "plugin", "imports"]
 classifiers = [
     'Environment :: Console',

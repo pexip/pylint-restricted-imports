@@ -11,13 +11,13 @@ ROOT_DIR = Path(__file__).parent
 with ROOT_DIR.joinpath("pyproject.toml").open("r") as pyproject:
     PROJECT = toml.load(pyproject)
 
-with ROOT_DIR.joinpath("README.md").open("r") as readme:
-    README = readme.read()
-
 METADATA = PROJECT["tool"]["poetry"]
 AUTHOR, AUTHOR_EMAIL = METADATA["authors"][0].rsplit(" ", 1)
 PACKAGE_DIRS = {p["include"]: p.get("from", ".") + "/" + p["include"] for p in METADATA["packages"]}
 CLASSIFIERS = PROJECT["tool"]["poetry"]["classifiers"]
+
+with ROOT_DIR.joinpath(METADATA["readme"]).open("r") as readme:
+    README = readme.read()
 
 
 def _get_dependencies(requirements):
