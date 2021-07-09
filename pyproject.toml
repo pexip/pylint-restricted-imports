@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pylint-restricted-imports"
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 description = "pylint-restricted-imports is a Pylint plugin to restrict what imports are allowed in different modules"
 authors = [
