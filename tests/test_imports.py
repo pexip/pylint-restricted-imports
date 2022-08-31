@@ -2,8 +2,9 @@ from pathlib import Path
 from unittest import mock
 
 import astroid
+from astroid import nodes
 
-from pylint.testutils import CheckerTestCase, Message
+from pylint.testutils import CheckerTestCase, MessageTest
 
 from pylint_restricted_imports import RestrictedImportChecker
 
@@ -23,7 +24,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
         """test no restricted imports from import"""
         node = astroid.extract_node("import baz", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
-            mock_import.return_value = astroid.Module("baz", "baz")
+            mod = nodes.Module("baz")
+            mod.doc_node = "baz"
+            mock_import.return_value = mod
             with self.assertNoMessages():
                 self.checker.visit_import(node)
 
@@ -31,7 +34,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
         """test no restricted imports from import from"""
         node = astroid.extract_node("from baz import wibble", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
-            mock_import.return_value = astroid.Module("baz.wibble", "baz.wibble")
+            mod = nodes.Module("baz.wibble")
+            mod.doc_node = "baz.wibble"
+            mock_import.return_value = mod
             with self.assertNoMessages():
                 self.checker.visit_importfrom(node)
 
@@ -39,9 +44,17 @@ class TestRestrictedImportChecker(CheckerTestCase):
         """test restricted import"""
         node = astroid.extract_node("import bar", "foo")
         with mock.patch.object(self.checker, "_import_module") as mock_import:
-            mock_import.return_value = astroid.Module("bar", "bar")
+            mod = nodes.Module("bar")
+            mod.doc_node = "bar"
+            mock_import.return_value = mod
             with self.assertAddsMessages(
-                Message("restricted-import", node=node, args=("bar", "bar"))
+                MessageTest(
+                    "restricted-import",
+                    line=1,
+                    col_offset=0,
+                    node=node,
+                    args=("bar", "bar"),
+                )
             ):
                 self.checker.visit_import(node)
 
@@ -50,9 +63,17 @@ class TestRestrictedImportChecker(CheckerTestCase):
         node = astroid.extract_node("from bar import wibble", "foo")
 
         with mock.patch.object(self.checker, "_import_module") as mock_import:
-            mock_import.return_value = astroid.Module("bar.wibble", "bar.wibble")
+            mod = nodes.Module("bar.wibble")
+            mod.doc_node = "bar.wibble"
+            mock_import.return_value = mod
             with self.assertAddsMessages(
-                  Message("restricted-import", node=node, args=("bar.wibble", "bar"))
+                MessageTest(
+                    "restricted-import",
+                    line=1,
+                    col_offset=0,
+                    node=node,
+                    args=("bar.wibble", "bar"),
+                )
             ):
                 self.checker.visit_importfrom(node)
 
@@ -64,13 +85,21 @@ class TestRestrictedImportChecker(CheckerTestCase):
         node = astroid.extract_node("import baz", "foo")
         baz_module = astroid.extract_node("import bar", "baz").parent
         with mock.patch.object(self.checker, "_import_module") as mock_import_module:
+            mod = nodes.Module("bar")
+            mod.doc_node = "bar module"
             mock_import_module.side_effect = [
                 baz_module,
                 baz_module,
-                astroid.Module("bar", "bar module"),
+                mod,
             ]
             with self.assertAddsMessages(
-                Message("restricted-transitive-import", node=node, args=("baz", "bar"))
+                MessageTest(
+                    "restricted-transitive-import",
+                    line=1,
+                    col_offset=0,
+                    node=node,
+                    args=("baz", "bar"),
+                )
             ):
                 self.checker.visit_import(node)
 
@@ -80,14 +109,26 @@ class TestRestrictedImportChecker(CheckerTestCase):
         self.setup_method()
 
         node = astroid.extract_node("from baz import wibble", "foo")
-        baz_wibble_module = astroid.extract_node("from bar import Wibble", "baz.wibble").parent
+        baz_wibble_module = astroid.extract_node(
+            "from bar import Wibble", "baz.wibble"
+        ).parent
         with mock.patch.object(self.checker, "_import_module") as mock_import_module:
+            mod = nodes.Module(
+                "bar",
+            )
+            mod.doc_node = "bar module"
             mock_import_module.side_effect = [
                 baz_wibble_module,
                 baz_wibble_module,
-                astroid.Module("bar", "bar module"),
+                mod,
             ]
             with self.assertAddsMessages(
-                Message("restricted-transitive-import", node=node, args=("baz.wibble", "bar"))
+                MessageTest(
+                    "restricted-transitive-import",
+                    line=1,
+                    col_offset=0,
+                    node=node,
+                    args=("baz.wibble", "bar"),
+                )
             ):
                 self.checker.visit_importfrom(node)
