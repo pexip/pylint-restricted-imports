@@ -3,7 +3,7 @@ from unittest import mock
 
 import astroid
 
-from pylint.testutils import CheckerTestCase, Message
+from pylint.testutils import CheckerTestCase, MessageTest
 
 from pylint_restricted_imports import RestrictedImportChecker
 
@@ -41,7 +41,7 @@ class TestRestrictedImportChecker(CheckerTestCase):
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("bar", "bar")
             with self.assertAddsMessages(
-                Message("restricted-import", node=node, args=("bar", "bar"))
+                MessageTest("restricted-import", node=node, args=("bar", "bar"))
             ):
                 self.checker.visit_import(node)
 
@@ -52,7 +52,7 @@ class TestRestrictedImportChecker(CheckerTestCase):
         with mock.patch.object(self.checker, "_import_module") as mock_import:
             mock_import.return_value = astroid.Module("bar.wibble", "bar.wibble")
             with self.assertAddsMessages(
-                  Message("restricted-import", node=node, args=("bar.wibble", "bar"))
+                  MessageTest("restricted-import", node=node, args=("bar.wibble", "bar"))
             ):
                 self.checker.visit_importfrom(node)
 
@@ -70,7 +70,7 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
-                Message("restricted-transitive-import", node=node, args=("baz", "bar"))
+                MessageTest("restricted-transitive-import", node=node, args=("baz", "bar"))
             ):
                 self.checker.visit_import(node)
 
@@ -88,6 +88,6 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 astroid.Module("bar", "bar module"),
             ]
             with self.assertAddsMessages(
-                Message("restricted-transitive-import", node=node, args=("baz.wibble", "bar"))
+                MessageTest("restricted-transitive-import", node=node, args=("baz.wibble", "bar"))
             ):
                 self.checker.visit_importfrom(node)
