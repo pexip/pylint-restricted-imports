@@ -35,7 +35,7 @@ build-backend = "setuptools.build_meta"
 python = ">=3.7,<4.0"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
 astroid = ">=1.0"
-pylint = ">=2.12"
+pylint = ">=2.12,<3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=1.0"
