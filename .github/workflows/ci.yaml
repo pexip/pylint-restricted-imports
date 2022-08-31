@@ -29,6 +29,9 @@ jobs:
         run: |
           python -m pip install -U pip poetry
           poetry install
+      - name: Run black
+        run: |
+          poetry run black pylint_restricted_imports/ tests/
       - name: Run pytest
         run: |
           poetry run pytest -v tests/

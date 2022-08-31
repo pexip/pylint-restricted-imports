@@ -40,3 +40,4 @@ pylint = ">=2.12"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=1.0"
+black = "^22.6.0"
