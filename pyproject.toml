@@ -33,10 +33,10 @@ requires = ["setuptools>=40.8.0", "wheel", "toml"]
 build-backend = "setuptools.build_meta"
 
 [tool.poetry.dependencies]
-python = ">=3.6,<4.0"
+python = ">=3.7,<4.0"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
 astroid = ">=1.0"
-pylint = ">=1.0"
+pylint = ">=2.12"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=1.0"
