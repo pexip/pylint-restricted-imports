@@ -3,7 +3,12 @@ from unittest import mock
 
 import astroid
 
-from pylint.testutils import CheckerTestCase, MessageTest
+from pylint.testutils import CheckerTestCase
+
+try:
+    from pylint.testutils import MessageTest
+except ImportError:
+    from pylint.testutils import Message as MessageTest
 
 from pylint_restricted_imports import RestrictedImportChecker
 
