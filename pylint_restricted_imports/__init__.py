@@ -2,7 +2,11 @@ from collections import defaultdict
 from typing import Optional, List, Union, Set, Dict
 
 from astroid import Import, Module, ImportFrom, AstroidBuildingException
-from astroid.nodes import NodeNG
+
+try:
+    from astroid.nodes.node_classes import NodeNG
+except ImportError:
+    from astroid.node_classes import NodeNG
 from pylint.checkers import BaseChecker
 
 
