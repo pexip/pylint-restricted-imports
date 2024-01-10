@@ -51,7 +51,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 MessageTest(
                     "restricted-import",
                     line=1,
+                    end_line=1,
                     col_offset=0,
+                    end_col_offset=10,
                     node=node,
                     args=("bar", "bar"),
                 )
@@ -70,7 +72,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 MessageTest(
                     "restricted-import",
                     line=1,
+                    end_line=1,
                     col_offset=0,
+                    end_col_offset=22,
                     node=node,
                     args=("bar.wibble", "bar"),
                 )
@@ -96,7 +100,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 MessageTest(
                     "restricted-transitive-import",
                     line=1,
+                    end_line=1,
                     col_offset=0,
+                    end_col_offset=10,
                     node=node,
                     args=("baz", "bar"),
                 )
@@ -113,9 +119,7 @@ class TestRestrictedImportChecker(CheckerTestCase):
             "from bar import Wibble", "baz.wibble"
         ).parent
         with mock.patch.object(self.checker, "_import_module") as mock_import_module:
-            mod = nodes.Module(
-                "bar",
-            )
+            mod = nodes.Module("bar")
             mod.doc_node = "bar module"
             mock_import_module.side_effect = [
                 baz_wibble_module,
@@ -126,7 +130,9 @@ class TestRestrictedImportChecker(CheckerTestCase):
                 MessageTest(
                     "restricted-transitive-import",
                     line=1,
+                    end_line=1,
                     col_offset=0,
+                    end_col_offset=22,
                     node=node,
                     args=("baz.wibble", "bar"),
                 )

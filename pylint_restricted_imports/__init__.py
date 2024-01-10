@@ -4,13 +4,10 @@ from typing import Optional, List, Union, Set, Dict
 from astroid import Import, Module, ImportFrom, AstroidBuildingException
 from astroid.nodes import NodeNG
 from pylint.checkers import BaseChecker
-from pylint.interfaces import IAstroidChecker
 
 
 class RestrictedImportChecker(BaseChecker):
     """Pylint checker that enforces restricted import"""
-
-    __implements__ = IAstroidChecker
 
     name = "restricted-import"
     priority = -1
@@ -58,10 +55,10 @@ class RestrictedImportChecker(BaseChecker):
         self._imports: Dict[str, Set[str]] = defaultdict(set)
 
     def open(self):
-        for group in self.config.restricted_imports:
+        for group in self.linter.config.restricted_imports:
             root_module, restricted_import_str = group.split(":")
             self._restricted_imports[root_module] = restricted_import_str.split(";")
-        self._recursive = self.config.restricted_import_recurse
+        self._recursive = self.linter.config.restricted_import_recurse
 
     @staticmethod
     def _get_parent_module(node: NodeNG) -> Optional[Module]:
