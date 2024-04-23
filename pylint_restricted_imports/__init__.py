@@ -1,7 +1,12 @@
 from collections import defaultdict
 from typing import Optional, List, Union, Set, Dict
 
-from astroid import Import, Module, ImportFrom, AstroidBuildingException
+from astroid import Import, Module, ImportFrom
+
+try:
+    from astroid.exceptions import AstroidBuildingError
+except ImportError:
+    from astroid import AstroidBuildingError
 
 try:
     from astroid.nodes.node_classes import NodeNG
